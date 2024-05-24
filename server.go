@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"signzy.com/rtdc-api/health"
 )
 
-func createServer() *gin.Engine {
+func createRouter() *gin.Engine {
 	router := gin.Default()
 
 	router.SetTrustedProxies(nil)
@@ -13,4 +18,32 @@ func createServer() *gin.Engine {
 	router.GET("/", health.Check)
 
 	return router
+}
+
+func startServer(addr string) *http.Server {
+	server := &http.Server{
+		Addr:    addr,
+		Handler: createRouter().Handler(),
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			fmt.Printf("HTTP server stopped with error : %s\n", err)
+		}
+	}()
+
+	return server
+}
+
+func shutdownServer(ctx context.Context, server *http.Server, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		return err
+	}
+
+	fmt.Println("HTTP server has shutdown")
+
+	return nil
 }

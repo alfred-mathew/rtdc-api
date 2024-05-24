@@ -20,8 +20,9 @@ func LoadEnv() (Env, error) {
 	}
 
 	e := env{
-		host: envMap["HOST"],
-		port: uint16(port),
+		host:   envMap["HOST"],
+		port:   uint16(port),
+		db_uri: envMap["DB_URI"],
 	}
 
 	return e, nil
@@ -30,11 +31,13 @@ func LoadEnv() (Env, error) {
 type Env interface {
 	Host() string
 	Port() uint16
+	DatabaseUri() string
 }
 
 type env struct {
-	host string
-	port uint16
+	host   string
+	port   uint16
+	db_uri string
 }
 
 func (e env) Host() string {
@@ -43,4 +46,8 @@ func (e env) Host() string {
 
 func (e env) Port() uint16 {
 	return e.port
+}
+
+func (e env) DatabaseUri() string {
+	return e.db_uri
 }

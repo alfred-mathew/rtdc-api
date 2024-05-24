@@ -6,6 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Check(context *gin.Context) {
-	context.String(http.StatusOK, "Server is up and running")
+func Check(ctx *gin.Context) {
+	ctx.String(http.StatusOK, "Server is up and running")
 }
