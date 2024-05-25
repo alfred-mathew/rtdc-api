@@ -7,23 +7,26 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
+	"signzy.com/rtdc-api/auth"
 	"signzy.com/rtdc-api/health"
 )
 
-func createRouter() *gin.Engine {
+func createRouter(client *mongo.Client, signingKey []byte) *gin.Engine {
 	router := gin.Default()
 
 	router.SetTrustedProxies(nil)
 
 	health.Register(router)
+	auth.Register(router, client, signingKey)
 
 	return router
 }
 
-func startServer(addr string) *http.Server {
+func startServer(addr string, client *mongo.Client, signingKey []byte) *http.Server {
 	server := &http.Server{
 		Addr:    addr,
-		Handler: createRouter().Handler(),
+		Handler: createRouter(client, signingKey).Handler(),
 	}
 
 	go func() {

@@ -9,9 +9,6 @@ import (
 	"time"
 
 	"context"
-
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
@@ -24,9 +21,7 @@ func main() {
 	defer cancel()
 
 	log.Println("Connecting with database")
-	serverAPIOpts := options.ServerAPI(options.ServerAPIVersion1)
-	clientOpts := options.Client().ApplyURI(env.DatabaseUri()).SetServerAPIOptions(serverAPIOpts)
-	client, err := mongo.Connect(ctx, clientOpts)
+	client, err := connectDatabase(ctx, env.DatabaseUri())
 	if err != nil {
 		fmt.Printf("Failed to connect with database : %s\n", err)
 		return
@@ -35,7 +30,7 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", env.Host(), env.Port())
 	log.Printf("Starting server in %s\n", addr)
 
-	server := startServer(addr)
+	server := startServer(addr, client, env.SigningKey())
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -48,7 +43,7 @@ func main() {
 		fmt.Printf("Failed to shutdown server withing timeout %s : %s\n", timeout, err)
 	}
 
-	err = client.Disconnect(ctx)
+	err = disconnectDatabase(ctx, client)
 	if err != nil {
 		fmt.Printf("Failed to disconnect database : %s\n", err)
 	} else {
