@@ -15,7 +15,7 @@ func createRouter() *gin.Engine {
 
 	router.SetTrustedProxies(nil)
 
-	router.GET("/", health.Check)
+	health.Register(router)
 
 	return router
 }
