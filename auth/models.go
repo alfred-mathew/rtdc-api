@@ -28,3 +28,5 @@ type Claims struct {
 	Username string `json:"username"`
 	jwt.StandardClaims
 }
+
+const UserNameConetxtKey string = "authenticated-user"

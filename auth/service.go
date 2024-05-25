@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson"
@@ -18,11 +17,13 @@ const COLLECTION_NAME string = "users"
 
 type Service struct {
 	collection *mongo.Collection
+	signingKey []byte
 }
 
-func newService(client *mongo.Client) Service {
+func newService(client *mongo.Client, signingKey []byte) Service {
 	return Service{
 		collection: client.Database(DB_NAME).Collection(COLLECTION_NAME),
+		signingKey: signingKey,
 	}
 }
 
@@ -76,15 +77,19 @@ func passwordMatches(inputPassword string, hashedPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(inputPassword))
 }
 
-func createToken(username string, signingKey []byte) (string, error) {
-	expirationTime := time.Now().Add(24 * 7 * time.Hour)
+func (s Service) createToken(username string) (string, error) {
 	claims := &Claims{
 		Username: username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
-		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(signingKey)
+	return token.SignedString(s.signingKey)
+}
+
+func (s Service) validateTokenString(tokenString string) (*Claims, error) {
+	claims := &Claims{}
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return s.signingKey, nil
+	})
+	return claims, err
 }
