@@ -86,7 +86,21 @@ func (s Service) createToken(username string) (string, error) {
 	return token.SignedString(s.signingKey)
 }
 
-func (s Service) validateTokenString(tokenString string) (*Claims, error) {
+func (s Service) parseClaimsFromAuthHeader(header string) (*Claims, error) {
+	if header == "" {
+		return nil, errors.New("empty authorization header")
+	}
+
+	if !strings.HasPrefix(header, "Bearer") {
+		return nil, errors.New("bearer token not present in authorization header")
+	}
+
+	splits := strings.Split(header, " ")
+	if len(splits) != 2 {
+		return nil, errors.New("malformed bearer token")
+	}
+
+	tokenString := splits[1]
 	claims := &Claims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return s.signingKey, nil

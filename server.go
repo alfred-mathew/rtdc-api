@@ -19,6 +19,9 @@ func createRouter(client *mongo.Client, signingKey []byte) *gin.Engine {
 
 	health.Register(router)
 	auth.Register(router, client, signingKey)
+	router.GET("/test", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusAccepted, gin.H{"message": "ok"})
+	})
 
 	return router
 }

@@ -3,7 +3,6 @@ package auth
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -88,32 +87,15 @@ func (c controller) middleware(ctx *gin.Context) {
 		return
 	}
 
-	authorization := ctx.GetHeader("Authorization")
-	if !strings.HasPrefix(authorization, "Bearer") {
-		ctx.Next()
-		return
-	}
-
-	splits := strings.Split(authorization, " ")
-	if len(splits) != 2 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": "malformed authorization header",
-		})
-		return
-	}
-
-	tokenString := splits[1]
-	claims, err := c.service.validateTokenString(tokenString)
+	claims, err := c.service.parseClaimsFromAuthHeader(ctx.GetHeader("Authorization"))
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-			"error": "token could not be validated",
-		})
+		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("could not validate user : %s", err.Error())})
 		return
 	}
 
 	exists, err := c.service.userExists(claims.Username)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to query database for existing users: %s", err.Error())})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to query database for existing users: %s", err.Error())})
 		return
 	}
 
